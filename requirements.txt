@@ -1,0 +1,5 @@
+pandas
+gradio==4.44.1
+opencc
+llama-index-llms-ollama
+llama-index
