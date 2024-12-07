@@ -10,7 +10,7 @@
 
 > 與常見的 Retrieval-Augmented Generation (RAG) 不同，本系統完全採用基於規則的精確匹配方式，避免模糊搜尋的可能誤差。
 
-<img src="./pic/1.svg" alt="flow chart" width="200">
+<img src="./pic/1.svg" alt="flow chart" style="width: 100%; height: auto;">
 
 ---
 
