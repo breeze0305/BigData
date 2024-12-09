@@ -1,6 +1,8 @@
 import re
 import pandas as pd
 from llama_index.llms.ollama import Ollama
+from pypinyin import lazy_pinyin
+from fuzzywuzzy import process
 
 def model_test():
     # llm = Ollama(model="wangshenzhi/llama3-8b-chinese-chat-ollama-q4", request_timeout=360)
@@ -9,8 +11,19 @@ def model_test():
     response = llm.complete("早安，你覺得我等等晚餐吃啥")
     print(f"response:{response}")
 
+def fuzzy_search(column, fuzzy_input):
+    column = column.tolist()
+    column_pinyin = ["".join(lazy_pinyin(str_)) for str_ in column]
+    
+    fuzzy_pinyin = "".join(lazy_pinyin(fuzzy_input))
+    closest_match_pinyin, score = process.extractOne(fuzzy_pinyin, column_pinyin)
+    closest_match = column[column_pinyin.index(closest_match_pinyin)] # 從拼音轉換回原始名稱
+    return closest_match
+
 def question_one(arg:str, df):
-    row = df[df['中文課程名稱'] == arg]
+    key = fuzzy_search(df['中文課程名稱'], arg)
+    row = df[df['中文課程名稱'] == key]
+    
     outputs = []
     if not row.empty:
         rows = row['地點時間'].unique()
@@ -48,7 +61,8 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
         temp = question_one(arg, df)
         return temp
     if index == 2:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         if not row.empty:
             input_str = row.iloc[0]['地點時間'][0:5]##time
             
@@ -63,36 +77,43 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
             temp = f"星期{day} 第{start}節課到第{end}節課 總共{duration}小時"
             return temp
     if index == 3:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         if not row.empty:
             return row.iloc[0]['授課教師']
     if index == 4:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         if not row.empty:
             return row.iloc[0]['課程學分數量']
     if index == 5:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         print(row)
         if not row.empty:
             temp = row.iloc[0]['限修條件'] 
             return temp if temp != "無" else f"{arg}這門課,沒有限修條件"
     if index == 6:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         if not row.empty:
             return row.iloc[0]['全英語']
     if index == 7:
-        row = df[df['中文課程名稱'] == arg]
+        key = fuzzy_search(df['中文課程名稱'], arg)
+        row = df[df['中文課程名稱'] == key]
         if not row.empty:
             return row.iloc[0]['備註']
     if index == 8:
         arg = arg.replace("老師","")
         arg = arg.replace("教授","")
+        key = fuzzy_search(df['中文課程名稱'], arg)
         
-        row = df[df['授課教師'] == arg]
+        row = df[df['授課教師'].str.contains(key, na=False)]
         if not row.empty:
             return row['中文課程名稱'].unique()
-    if index == 9:
-        row = df[df['地點時間'][0:5] == arg]
+    if index == 9: # may has problem
+        key = fuzzy_search(df['地點時間'], arg)
+        row = df[df['地點時間'][0:5] == key]
         if not row.empty:
             return row['中文課程時間'].unique()
     if index == 10:
@@ -116,11 +137,17 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
         if not row.empty:
             return row['中文課程名稱'].unique()
     if index == 12:
-        row = df[df['地點時間'].str.contains(arg, na=False)]
+        key = fuzzy_search(df['地點時間'], arg)
+        row = df[df['地點時間'] == key]
         if not row.empty:
             # 在這間教室上的有:[]
             temp = row['中文課程名稱'].unique()
-            return "在這間教室上的有:" + " ".join(temp)
+            return "在這間教室上的課程有:" + "、".join(temp)
+    if index == 13:
+        key = fuzzy_search(df['地點時間'], arg)
+        row = df[df['中文課程名稱'] == key]
+        if not row.empty:
+            return row.iloc[0]['限修人數']
         
 def semantic_analysis(prompt,_str = ""):
     # llm = Ollama(model="wangshenzhi/llama3-8b-chinese-chat-ollama-q4", request_timeout=360)

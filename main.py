@@ -44,6 +44,7 @@ def get_preprompts():
     如果是透過"學分數"去詢問有哪一些課程符合,請幫我回答"10/學分數";
     如果是透過"星期幾"去詢問有哪一些課程符合,請幫我回答"11/星期幾";
     如果是透過"上課地點"去詢問有哪一些課程符合,請幫我回答"12/上課地點";
+    如果是透過"課程名稱"去詢問限修人數,請幫我回答"13/該問題的課程名稱";
     
     """
     # 如果問題與上述的內容都不相關,則直接回傳 "0/不支援的問題" 
@@ -67,7 +68,7 @@ def is_exact_match(input_str):
     return not (input_str in specific_strings)
 
 def main_process(question):
-    question = question + ",請用中文回答"
+    # question = question + ",請用中文回答"
     random_label = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
     preprompt = get_preprompts()
     MAX_ATTEMPTS = 5
