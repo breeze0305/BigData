@@ -23,12 +23,12 @@ def launch(debug: bool):
             msg.submit(feed_back, [msg, chatbot], [msg, chatbot])
 
     if debug:
-        demo.launch(server_port=8000)
+        demo.launch(server_port=8001)
     else:
-        demo.launch(share=True, auth=checker, server_port=8000)
+        demo.launch(share=True, auth=checker, server_port=8001)
 
 
 if __name__ == "__main__":
-    debug = True
+    debug = False
 
     launch(debug)

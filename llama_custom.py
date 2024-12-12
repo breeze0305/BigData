@@ -62,9 +62,10 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
         return temp
     if index == 2:
         key = fuzzy_search(df['中文課程名稱'], arg)
-        row = df[df['中文課程名稱'] == key]
-        if not row.empty:
-            input_str = row.iloc[0]['地點時間'][0:5]##time
+        rows = df[df['中文課程名稱'] == key]
+        output = []
+        for index,row in rows.iterrows():
+            input_str = row['地點時間'][0:5]##time
             
             parts = input_str.split()
             day = parts[0]  # 星期
@@ -75,17 +76,22 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
 
             # 組合成目標格式
             temp = f"星期{day} 第{start}節課到第{end}節課 總共{duration}小時"
-            return temp
+            output.append(temp)
+        return output
     if index == 3:
         key = fuzzy_search(df['中文課程名稱'], arg)
-        row = df[df['中文課程名稱'] == key]
-        if not row.empty:
-            return row.iloc[0]['授課教師']
+        rows = df[df['中文課程名稱'] == key]
+        output = []
+        for index,row in rows.iterrows():
+            temp = row['授課教師']
+            output.append(temp)
+        return output
     if index == 4:
         key = fuzzy_search(df['中文課程名稱'], arg)
         row = df[df['中文課程名稱'] == key]
         if not row.empty:
-            return row.iloc[0]['課程學分數量']
+            temp = row.iloc[0]['課程學分數量']
+            return f"{key}這門課的學分數是{temp}"
     if index == 5:
         key = fuzzy_search(df['中文課程名稱'], arg)
         row = df[df['中文課程名稱'] == key]
@@ -102,12 +108,12 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
         key = fuzzy_search(df['中文課程名稱'], arg)
         row = df[df['中文課程名稱'] == key]
         if not row.empty:
-            return row.iloc[0]['備註']
+            temp = row.iloc[0]['備註']
+            return temp if temp != "無" else f"{key}這門課在課表上,沒有備註訊息"
     if index == 8:
         arg = arg.replace("老師","")
         arg = arg.replace("教授","")
-        key = fuzzy_search(df['中文課程名稱'], arg)
-        
+        key = fuzzy_search(df['授課教師'], arg)
         row = df[df['授課教師'].str.contains(key, na=False)]
         if not row.empty:
             return row['中文課程名稱'].unique()
@@ -117,8 +123,24 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
         if not row.empty:
             return row['中文課程時間'].unique()
     if index == 10:
-        numbers = re.findall(r'\d+', arg) # 去除字串中的"學分"，只留下數字
-        row = df[df["課程學分數量"] == int(numbers[0])]["中文課程名稱"]
+        number = str(arg).replace("學分", '')
+        chinese_to_arabic = {
+            "零": 0,
+            "一": 1,
+            "二": 2,
+            "三": 3,
+            "四": 4,
+            "五": 5,
+            "六": 6,
+            "七": 7,
+            "八": 8,
+            "九": 9
+        }
+        if number.isdigit():  
+            number = int(number)  
+        else:
+            number = chinese_to_arabic.get(number, -1)
+        row = df[df["課程學分數量"] == int(number)]["中文課程名稱"]
         if not row.empty:
             return row.unique()
     if index == 11: # 全部轉成阿拉伯數字
@@ -138,13 +160,14 @@ def filtered_question(index, arg:str): # index:問什麼 arg:關鍵字
             return row['中文課程名稱'].unique()
     if index == 12:
         key = fuzzy_search(df['地點時間'], arg)
-        row = df[df['地點時間'] == key]
+        key = key[5:]
+        row = df[df['地點時間'].str.contains(key, na=False)]
         if not row.empty:
             # 在這間教室上的有:[]
             temp = row['中文課程名稱'].unique()
             return "在這間教室上的課程有:" + "、".join(temp)
     if index == 13:
-        key = fuzzy_search(df['地點時間'], arg)
+        key = fuzzy_search(df['中文課程名稱'], arg)
         row = df[df['中文課程名稱'] == key]
         if not row.empty:
             return row.iloc[0]['限修人數']
@@ -159,7 +182,7 @@ def semantic_analysis(prompt,_str = ""):
 
 def sentence_enhancement(ques,ans):
     llm = Ollama(model="wangshenzhi/llama3-8b-chinese-chat-ollama-q8", request_timeout=360)
-    prompt = f"""你是一個熟悉大學課程的語言模型，請根據以下問題和簡答，將簡答改寫為流暢且完整的句子，請不要幫忙主觀回答。你的任務是潤句，不需要提及任何背景資訊和加入主觀內容。請用繁體中文回答。
+    prompt = f"""你是一個熟悉大學課程的語言模型，請根據以下問題和簡答，將簡答改寫為流暢且完整的句子，請不要自行回答任何有關的問題。你的任務是潤句，不需要提及任何背景資訊和加入主觀內容。請用繁體中文回答，請嚴格遵守指示。\n
             問題:「{ques}」
             簡答:「{ans}」
             """
@@ -173,7 +196,8 @@ def sentence_enhancement(ques,ans):
 
 if __name__ == "__main__":
     # model_test()
-    semantic_analysis("","早安，你覺得我等等晚餐吃啥")
+    # semantic_analysis("","早安，你覺得我等等晚餐吃啥")
+    print(filtered_question(10,"三學分"))
     # 請問程式設計的上課時間
     # 請問類比積體電路導論的上課時間
     # 請問程式設計的上課地點在哪?
